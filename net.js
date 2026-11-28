@@ -1,7 +1,7 @@
 // Чат, рынок, запросы и друзья. NET_URL пустой → демо-режим (виртуальные игроки, сохраняются на этом телефоне).
 // Для настоящего мультиплеера запусти server.py на сервере с HTTPS и впиши адрес, например:
 // const NET_URL='https://my-fisher.onrender.com';
-const NET_URL='https://fisher-server.onrender.com';
+const NET_URL='';
 let mk='buy',NETD=null,mktL=[],reqL=[],netLast=-12000;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const BAD=/^[а-яё]{0,3}(?:ху[йеёяию]|пизд|[её]б(?:ать|ан|ну|л[оа]|ут|ёт|ет|ыр)|бляд|блят|бляха|бля$|муда[кч]|залуп|пидо?р|гандон|сучар|сук[аие]|шлюх|дроч|мраз|ублюд)/i;
@@ -10,11 +10,11 @@ const nlog=x=>{S.nlog=S.nlog||[];S.nlog.unshift({t:Date.now(),x});S.nlog.length=
 const cloud=()=>{try{return Telegram.WebApp.CloudStorage}catch(e){return null}};
 const cloudSet=(k,v)=>{const c=cloud();if(c&&v.length<3800)try{c.setItem(k,v,()=>{})}catch(e){}};
 const cloudGet=k=>new Promise(r=>{const c=cloud();if(!c)return r(null);try{c.getItem(k,(e,v)=>r(e?null:v))}catch(e){r(null)}});
-const colCount=()=>Object.keys(S.col||{}).length,myScore=()=>lvlN()*1000+colCount()*50+Math.max(0,Math.floor(S.c/100));
+const colCount=()=>Object.keys(S.col||{}).filter(k=>F[k]).length,myScore=()=>lvlN()*1000+colCount()*50+Math.max(0,Math.floor(S.c/100));
 const myInfo=()=>({uid:me().id,name:me().name,rank:rankInfo().n,lvl:lvlN(),coins:Math.floor(S.c),col:colCount(),score:myScore()});
 function me(){let T=null;try{T=Telegram.WebApp.initDataUnsafe.user}catch(e){}if(!S.uid)S.uid=T?'t'+T.id:'u'+Math.random().toString(36).slice(2,9);return{id:S.uid,name:(T&&T.first_name)||'Рыбак '+S.uid.slice(-3)}}
 function demoLoad(){if(!NETD){try{NETD=JSON.parse(localStorage.getItem('pfdemo'))}catch(e){}if(!NETD)demoInit()}}
-function netInit(){me();if(!NET_URL)cloudGet('pfchat').then(v=>{if(!v)return;try{demoLoad();const ids=new Set(NETD.chat.map(m=>m.id));JSON.parse(v).forEach(m=>{if(!ids.has(m.id))NETD.chat.push(m)});NETD.chat.sort((a,b)=>a.id-b.id);demoSave()}catch(e){}})}
+function netInit(){me();setTimeout(pingNow,1200);try{const bye=()=>{if(NET_URL&&navigator.sendBeacon)navigator.sendBeacon(NET_URL+'/api/ping',new Blob([JSON.stringify(myInfo())],{type:'application/json'}))};document.addEventListener('visibilitychange',()=>{if(document.hidden)bye()});addEventListener('pagehide',bye)}catch(e){}if(!NET_URL)cloudGet('pfchat').then(v=>{if(!v)return;try{demoLoad();const ids=new Set(NETD.chat.map(m=>m.id));JSON.parse(v).forEach(m=>{if(!ids.has(m.id))NETD.chat.push(m)});NETD.chat.sort((a,b)=>a.id-b.id);demoSave()}catch(e){}})}
 async function netCall(path,body){if(!NET_URL)return demoCall(path,body);
 try{const r=await fetch(NET_URL+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});return await r.json()}catch(e){return{err:'Нет связи с сервером'}}}
 // ---- демо-режим: хранится в localStorage, ничего не пропадает после перезагрузки ----
@@ -46,13 +46,16 @@ function demoPlayers(){const out=[];for(let i=0;i<30;i++){const lvl=2+((i*37+11)
 const kingOf=p=>{const c=p.filter(x=>x.lvl>=40).sort((a,b)=>b.score-a.score)[0];return c?c.uid:''};
 const demoStats=()=>{const p=demoPlayers();return{total:p.length,online:p.filter(x=>x.online).length,king:kingOf(p)}};
 const demoTop=by=>{const p=demoPlayers(),k=kingOf(p);return p.sort((a,b)=>b[by]-a[by]).slice(0,20).map(x=>({...x,king:x.uid==k}))};
-let pingLast=-60000;
+let pingLast=-60000,lastCol=-1,pingFail=0;const pingState={ok:0,t:0,err:''};
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-async function pingNow(){const r=await netCall('/api/ping',myInfo());if(!r||!r.ok)return r;
+async function pingNow(){const r=await netCall('/api/ping',myInfo());
+if(!r||!r.ok){pingState.ok=0;pingState.err=(r&&r.err)||'нет ответа';if(NET_URL&&pingFail++<6)setTimeout(pingNow,8000+pingFail*4000);return r}
+pingFail=0;pingState.ok=1;pingState.t=Date.now();pingState.err='';
 const was=!!S.king;S.king=r.king===me().id;if(S.king!=was){sv();hdr();popup(S.king?'👑':'😢',S.king?'Ты — Абсолютный Король Рыбалки!':'Тебя обогнали',S.king?'Ты первый в рейтинге. Звание твоё, пока тебя никто не обгонит.':'Звание Короля перешло к другому игроку. Догоняй!')}
 const c=lsGet('pftop');if(NET_URL&&c&&c.total>=5&&r.total<c.total*.6){await netCall('/api/restore',{players:c.list,chat:lsGet('pfchat2')||[]});lsSet('pftop',{total:r.total,list:c.list})}return r}
-async function topRefresh(){const[s,t]=await Promise.all([netCall('/api/stats'),netCall('/api/top?by=score&n=200')]);const B=$('#tpb');if(!B)return;if(t.err||s.err){B.innerHTML='<p class="bd">⚠ '+esc(t.err||s.err)+'</p>';return}const id=me().id,all=t.list||[],tt=all.slice(0,20);if(NET_URL&&all.length)lsSet('pftop',{total:s.total,list:all.slice(0,200)});
-B.innerHTML='<p>👥 Игроков в игре: <b>'+(s.total==null?'—':s.total)+'</b> · 🟢 сейчас онлайн: <b>'+(s.online==null?'—':s.online)+'</b></p>'+(tt.map((x,i)=>`<div class="rw" style="${x.uid==id?'background:#e8602c33':''}"><b style="width:34px">${i<3?['🥇','🥈','🥉'][i]:i+1}</b><span><b>${cens(x.name)}</b> ${x.king?'👑':''}${x.online?'🟢':''}<br><small>${esc(x.king?'Абсолютный Король Рыбалки':x.rank)} · ур. ${x.lvl} · 💰 ${fm(x.coins)} · 📖 ${x.col} рыб</small></span><b>${fm(x.score)}</b></div>`).join('')||'<p class="mu">Список пуст.</p>')}
+async function topRefresh(){const[s,t]=await Promise.all([netCall('/api/stats'),netCall('/api/top?by=score&n=200')]);const B=$('#tpb');if(!B)return;if(t.err||s.err){B.innerHTML='<p class="bd">⚠ '+esc(t.err||s.err)+'</p>';return}const id=me().id,all=t.list||[],tt=all.slice(0,20),pos=all.findIndex(x=>x.uid==id);if(NET_URL&&all.length)lsSet('pftop',{total:s.total,list:all.slice(0,200)});
+const ps=pingState.ok?'✔ твои данные отправлены в '+new Date(pingState.t).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):'⚠ твои данные не отправлены'+(pingState.err?' ('+esc(pingState.err)+')':'');
+B.innerHTML='<p>👥 Игроков в игре: <b>'+(s.total==null?'—':s.total)+'</b> · 🟢 сейчас онлайн: <b>'+(s.online==null?'—':s.online)+'</b></p><p class="mu">'+ps+(pos>=0?' · твоё место: <b>#'+(pos+1)+'</b>':' · тебя пока нет в списке')+'</p><button class="g" data-x="tp">🔄 ОБНОВИТЬ</button>'+(tt.map((x,i)=>`<div class="rw" style="${x.uid==id?'background:#e8602c33':''}"><b style="width:34px">${i<3?['🥇','🥈','🥉'][i]:i+1}</b><span><b>${cens(x.name)}</b> ${x.king?'👑':''}${x.online?'🟢':''}<br><small>${esc(x.king?'Абсолютный Король Рыбалки':x.rank)} · ур. ${x.lvl} · 💰 ${fm(x.coins)} · 📖 ${x.col||0}/${F.length} рыб</small></span><b>${fm(x.score)}</b></div>`).join('')||'<p class="mu">Список пуст.</p>');bindX()}
 function topTab(){$('#pn').innerHTML='<h3>🏆 Топ игроков</h3><p class="mu">'+(NET_URL?'':'Демо-режим: другие игроки виртуальные. ')+'Рейтинг = уровень×1000 + рыбы в коллекции×50 + монеты/100.</p><div id="tpb"></div>';pingNow().then(topRefresh)}
 // ---- чат ----
 async function chatRefresh(){const r=await netCall('/api/chat');if(!r.list){const e=$('#cl');if(e&&r.err)e.innerHTML='<small>⚠ '+esc(r.err)+'</small>';return}if(NET_URL&&r.list.length)lsSet('pfchat2',r.list.slice(-40));const e=$('#cl');if(e){e.innerHTML=r.list.map(m=>'<div><b>'+cens(m.name)+':</b> '+cens(m.text)+'</div>').join('')||'<small>Пока тихо…</small>';e.scrollTop=e.scrollHeight}}
@@ -83,7 +86,7 @@ else if(k=='rnew'){const i=+$('#rq_i').value,p=Math.round(+$('#rq_p').value);if(
 else if(k=='rcan'){r=await netCall('/api/req/cancel',{id:x,uid:u.id});if(r.ok){S.c+=r.price;say('Запрос отменён, деньги вернулись');nlog('Запрос отменён, возвращено '+fm(r.price)+'🪙')}else say(r.err||'Запрос не найден')}
 else if(k=='fill'){const q=reqL.find(z=>z.id==x);if(!q)return say('Запрос уже закрыт');const js=S.inv.map((v,j)=>[v,j]).filter(a=>a[0].i==q.i).sort((a,b)=>a[0].w-b[0].w);if(!js.length)return say('У тебя нет такой рыбы');const it=js[0][0];r=await netCall('/api/req/fill',{id:x,uid:u.id,w:it.w});if(r.ok){const j=S.inv.findIndex(v=>v===it);if(j>=0)S.inv.splice(j,1);S.c+=r.price;say('Запрос выполнен: +'+fm(r.price)+'🪙');nlog('Выполнен запрос: '+F[q.i].n+' → +'+fm(r.price)+'🪙')}else say(r.err)}}
 // ---- входящие (продажи, запросы, награды за друзей) ----
-async function netTick(ts){if(ts-pingLast>60000){pingLast=ts;pingNow()}if(ts-netLast<12000)return;netLast=ts;const r=await netCall('/api/inbox?uid='+encodeURIComponent(me().id));
+async function netTick(ts){const cc=colCount();if(ts-pingLast>45000||cc!=lastCol){pingLast=ts;lastCol=cc;pingNow()}if(ts-netLast<12000)return;netLast=ts;const r=await netCall('/api/inbox?uid='+encodeURIComponent(me().id));
 if(r.items&&r.items.length){r.items.forEach(it=>{if(it.kind=='coins'){S.c+=it.n;const m='Продан лот'+(it.i!=null?' «'+F[it.i].n+'»':'')+': +'+fm(it.n)+'🪙';say('Рынок: '+m);nlog(m)}
 else if(it.kind=='fish'){S.inv.push({i:it.i,w:it.w,p:Math.round(F[it.i].p*.8)});const m='Твой запрос выполнен: получена рыба «'+F[it.i].n+'»'+(it.by?' (от '+it.by+')':'');say(m+' 🐟');nlog(m)}
 else if(it.kind=='ref'){S.c+=it.n;(S.rf=S.rf||[]).push(it.name||'Друг');const m='Друг '+(it.name||'')+' зашёл в игру: +'+it.n+'🪙';say('👥 '+m);nlog(m);popup('👥','Друг в игре!','+'+it.n+'🪙 за приглашение: '+esc(it.name||'друг')+' зашёл в игру.')}});sv();hdr()}

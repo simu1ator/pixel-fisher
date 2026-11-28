@@ -51,16 +51,16 @@ details{font-size:12px;color:var(--mut);margin-top:6px}
 <div class="bx" id="pn"></div>
 </div>
 <div id="md" hidden><div id="mc"></div></div>
-<script src="scenes.js?v=1795806112"></script>
-<script src="world.js?v=1795806112"></script>
-<script src="content.js?v=1795806112"></script>
-<script src="content2.js?v=1795806112"></script>
-<script src="ui.js?v=1795806112"></script>
-<script src="look.js?v=1795806112"></script>
-<script src="donate.js?v=1795806112"></script>
-<script src="house.js?v=1795806112"></script>
-<script src="pond.js?v=1795806112"></script>
-<script src="net.js?v=1795806112"></script>
+<script src="scenes.js?v=1795870238"></script>
+<script src="world.js?v=1795870238"></script>
+<script src="content.js?v=1795870238"></script>
+<script src="content2.js?v=1795870238"></script>
+<script src="ui.js?v=1795870238"></script>
+<script src="look.js?v=1795870238"></script>
+<script src="donate.js?v=1795870238"></script>
+<script src="house.js?v=1795870238"></script>
+<script src="pond.js?v=1795870238"></script>
+<script src="net.js?v=1795870238"></script>
 <script>
 const $=s=>document.querySelector(s),fm=n=>Math.round(n).toLocaleString('ru');
 const T=['Обычная','Необычная','Редкая','Эпическая','Легендарная'],TC=['#8d99a6','#3fae5a','#3b8de0','#a45be0','#f0b323'];
@@ -151,7 +151,7 @@ let svok=1,noSave=0;const sv=()=>{if(noSave)return;try{localStorage.setItem('pf1
 const mx=i=>Math.round(RODS[i].hp*(1+.12*S.rods[i].l));
 const RS=()=>{const r=RODS[S.eq],o=S.rods[S.eq];return{pow:r.pow*(1+.12*o.l),mx:mx(S.eq),luck:r.luck,o}};
 const g={st:'idle',t:0,hold:false,down:false,bait:-1};
-const say=t=>{$('#msg').textContent=t};
+const say=t=>{$('#msg').textContent=t;try{toast(t)}catch(e){}};
 const bar=(v,c)=>`<div class="bar"><i style="width:${Math.max(0,v*100)}%;background:${c||(v>.5?'#3fae5a':v>.25?'#e8a22c':'#d33')}"></i></div>`;
 function hdr(){const r=RS(),L=LINES[S.ln.t],B=S.boats[S.boat],bo=B?`<div>⛵ ${BOATS[S.boat].n}<br><b>${Math.ceil(B.hp)}/${BOATS[S.boat].hp}</b>${bar(B.hp/BOATS[S.boat].hp)}</div>`:'';$('#co').textContent='🪙 '+fm(S.c)+(S.c<0?' (ДОЛГ!)':'')+' · '+rankInfo().n+(vipLeft()>0?' · 👑':'');$('#co').style.color=S.c<0?'var(--bad)':'';
 $('#gr').innerHTML=`<div>🎣 ${RODS[S.eq].n}${r.o.l?' +'+r.o.l:''}<br><b>${Math.ceil(r.o.hp)}/${r.mx}</b>${bar(r.o.hp/r.mx)}</div><div>🧵 ${L.n}<br><b>${Math.ceil(S.ln.hp)}/${L.hp}</b>${bar(S.ln.hp/L.hp)}</div>${bo}`}

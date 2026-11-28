@@ -7,15 +7,16 @@ const DECOR=[{n:'Камни',p:80,k:'rock',v:[14,70,42,16]},{n:'Водоросл
 let pk='view';
 const CAP=()=>POND_SZ[S.pd.lv.size];
 const lifeOf=i=>LIFE[F[i].t]*(.8+Math.random()*.4);
-const pondOK=i=>F[i].t>=0&&F[i].t<5&&F[i].w1<=150;
-function newFish(i,w,b){const q=F[i];return{i,w:+w.toFixed(3),mx:+(b?q.w0+(q.w1-q.w0)*(.5+Math.random()*.5):Math.max(w,q.w1*(.9+Math.random()*.2))).toFixed(2),age:b?0:Math.random()*lifeOf(i)*.3,life:lifeOf(i),b:b?1:0}}
+const pondOK=i=>F[i].t>=0&&F[i].t<5;
+function newFish(i,w,b){const q=F[i];return{i,w:+w.toFixed(3),mx:+(b?q.w0+(q.w1-q.w0)*(.5+Math.random()*.5):Math.max(w*1.12,q.w1*(.95+Math.random()*.25))).toFixed(2),age:b?0:Math.random()*lifeOf(i)*.3,life:lifeOf(i),b:b?1:0}}
 const pbase=f=>{const q=F[f.i];return Math.max(1,Math.round(q.p*(.25+.9*Math.min(1,f.w/f.mx))))};
 const pval=f=>f.d?Math.max(1,Math.round(f.dv*.04)):f.b?Math.max(pbase(f)+1,Math.round(pbase(f)*1.05)):pbase(f);
 const ready=f=>!f.d&&(f.w>=f.mx*.95||f.age>=f.life*.85);
 const cleanCost=()=>Math.ceil(15+S.pd.fish.length*4.5);
 function modInit(){houseInit();S.pd=S.pd||{t:Date.now(),q:100,lv:{size:0,filter:0},feed:[10,0,0],fs:0,fish:[]};S.pd.dec=S.pd.dec||{own:[],on:[]};
+S.pd.fish.forEach(f=>{if(f.mx==null){f.mx=+Math.max(f.w,F[f.i].w1*1.1).toFixed(2);f.age=f.age||0;f.life=lifeOf(f.i)}
+if(!f.g2&&!f.d&&!f.b&&f.w>=f.mx*.97){f.mx=+Math.max(f.w*1.12,F[f.i].w1*1.15).toFixed(2);f.g2=1}});
 worldInit();contentInit();content2Init();lookInit();inflate();navInit();netInit();houseWear();pondTick()}
-S.pd.fish.forEach(f=>{if(f.mx==null){f.mx=+Math.max(f.w,F[f.i].w1*1.1).toFixed(2);f.age=f.age||0;f.life=lifeOf(f.i)}});
 function kill(f){f.dv=pval(f);f.d=1}
 function pondTick(){const p=S.pd,now=Date.now();let dm=Math.min((now-p.t)/60000,720);if(dm<1/6)return;p.t=now;
 const n=Math.ceil(dm),st=dm/n,born=[],aged=[],dirty=[],cl=1-Math.min(.3,p.dec.on.reduce((s,i)=>s+(DECOR[i].cl||0),0));
@@ -30,7 +31,7 @@ for(let k=0;k<n;k++){const live=p.fish.filter(f=>!f.d),dead=p.fish.length-live.l
 const u=a=>[...new Set(a)].join(', ');
 if(aged.length||dirty.length)say((aged.length?'🕯 Умерли от старости: '+u(aged)+'. ':'')+(dirty.length?'💀 Погибли из-за грязной воды: '+u(dirty)+'. ':'')+'Продай их и посади новых.');else if(born.length)say('🍼 В пруду родились мальки: '+u(born));sv()}
 function pondStat(){const p=S.pd,live=p.fish.filter(f=>!f.d),dead=p.fish.length-live.length,rd=live.filter(ready),bn=live.filter(f=>f.b).length,tight=live.length/CAP()>.6;
-return `🐟 Живых: <b>${live.length}/${CAP()}</b>${bn?' · 🍼 выведено: <b>'+bn+'</b>':''}${dead?' · ☠ мёртвых: <b>'+dead+'</b>':''}<br>✅ Готово к продаже: <b>${rd.length}</b> на <b>${fm(rd.reduce((s,f)=>s+pval(f),0))}🪙</b>${tight?'<br>⚠ Тесновато: вода портится быстрее':''}<br>💧 Чистота воды ${Math.round(p.q)}%${bar(p.q/100)}🍽 Корм (${FEED[p.fs].n}): <b>${Math.floor(p.feed[p.fs])}</b>`}
+return `🐟 Живых: <b>${live.length}/${CAP()}</b>${bn?' · 🍼 выведено: <b>'+bn+'</b>':''}${dead?' · ☠ мёртвых: <b>'+dead+'</b>':''}<br>✅ Готово к продаже: <b>${rd.length}</b> на <b>${fm(rd.reduce((s,f)=>s+pval(f),0))}🪙</b>${tight?'<br>⚠ Тесновато: вода портится быстрее':''}${live.length&&p.feed[p.fs]<live.length/10?'<br>⚠ Корм закончился — рыбы не растут':''}${p.q<60&&live.length?'<br>⚠ Грязная вода замедляет рост':''}<br>💧 Чистота воды ${Math.round(p.q)}%${bar(p.q/100)}🍽 Корм (${FEED[p.fs].n}): <b>${Math.floor(p.feed[p.fs])}</b>`}
 const DIMG={};
 function decoImg(k){if(DIMG[k])return DIMG[k];const d=DECOR.find(x=>x.k==k),v=d.v,c=document.createElement('canvas');c.width=v[2];c.height=v[3];const Y=c.getContext('2d'),Q=(col,x,y,w,h)=>{Y.fillStyle=col;Y.fillRect(x|0,y|0,w|0,h|0)};
 Y.translate(-v[0],-v[1]);Q('#9bd6fa',0,0,160,20);Q('#5fae5f',0,16,160,8);Q('#2c82d0',6,24,148,62);Y.globalAlpha=.25;Q('#001a40',6,56,148,30);Y.globalAlpha=1;Q('#c8b078',6,82,148,4);decoDraw(Y,Q,500,k);return DIMG[k]=c.toDataURL()}
@@ -52,11 +53,11 @@ function pondTab(){pondTick();const p=S.pd,live=p.fish.filter(f=>!f.d),rd=live.f
 let h='<div class="pill">'+[['view','🏞 Пруд'],['fish','🐟 Рыбы'],['care','🍽 Уход'],['up','⬆ Улучшения'],['dec','🎨 Декор']].map(a=>`<button class="g ${pk==a[0]?'on':''}" data-p="pk,${a[0]}">${a[1]}</button>`).join('')+'</div>';
 const sellAll=rd.length?`<button class="wide" data-p="sa">💰 ПРОДАТЬ ГОТОВЫХ · ${fm(rdV)}🪙</button>`:'';
 if(pk=='view')h+=`<canvas id="pc" width="160" height="90" style="width:100%;image-rendering:pixelated;border:3px solid var(--ln)"></canvas><div id="pst">${pondStat()}</div><p class="mu">🍼 — рыбы, рождённые в твоём пруду, стоят на 5% дороже. Рыбы стареют и умирают (чаще от старости, реже от грязной воды), а когда в пруду тесно, вода портится быстрее.</p>`+sellAll;
-else if(pk=='fish'){const gr={};p.fish.forEach(f=>{const key=f.i+(f.b?'b':'')+(f.d?'d':''),a=gr[key]=gr[key]||{i:f.i,b:f.b?1:0,d:f.d?1:0,n:0,w:0,r:0,v:0,rv:0,left:1e9};a.n++;a.w+=f.w;a.v+=pval(f);a.left=Math.min(a.left,f.life-f.age);if(ready(f)){a.r++;a.rv+=pval(f)}});
+else if(pk=='fish'){const gr={};p.fish.forEach(f=>{const key=f.i+(f.b?'b':'')+(f.d?'d':''),a=gr[key]=gr[key]||{i:f.i,b:f.b?1:0,d:f.d?1:0,n:0,w:0,m:0,r:0,v:0,rv:0,left:1e9};a.n++;a.w+=f.w;a.m+=f.mx;a.v+=pval(f);a.left=Math.min(a.left,f.life-f.age);if(ready(f)){a.r++;a.rv+=pval(f)}});
  h+=`<p class="mu">Всего в пруду на <b>${fm(totV)}🪙</b>, готовых к продаже на <b>${fm(rdV)}🪙</b>. Продаются полностью выросшие и старые рыбы.</p>`+sellAll+(Object.values(gr).sort((a,b)=>a.d-b.d).map(a=>a.d?`<div class="rw"><span style="flex:none;filter:grayscale(1);opacity:.6">${im(a.i,34)}</span><span><b>☠ ${F[a.i].n}</b> ×${a.n}<br><small>мёртвые · ~${fm(a.v/a.n)}🪙/шт (4% от прежней цены)</small></span><button class="g" data-p="sd">Продать · ${fm(a.v)}🪙</button></div>`
- :`<div class="rw"><span style="position:relative;flex:none">${im(a.i,34)}${a.b?'<span style="position:absolute;right:-6px;top:-8px;font-size:13px">🍼</span>':''}</span><span><b>${F[a.i].n}</b> ×${a.n}${a.b?' · выведены тобой':''}<br><small>ср. вес ${(a.w/a.n).toFixed(2)} кг · ~${fm(a.v/a.n)}🪙/шт · готово ${a.r}${a.left<240?' · старость через ~'+Math.max(0,Math.round(a.left/60*10)/10)+' ч':''}</small></span>${a.r?`<button data-p="sr,${a.i},${a.b}">Продать ${a.r} шт · ${fm(a.rv)}🪙</button>`:`<small>растёт…<br>всего ${fm(a.v)}🪙</small>`}</div>`).join('')||'<p class="mu">Пруд пуст.</p>');
+ :`<div class="rw"><span style="position:relative;flex:none">${im(a.i,34)}${a.b?'<span style="position:absolute;right:-6px;top:-8px;font-size:13px">🍼</span>':''}</span><span><b>${F[a.i].n}</b> ×${a.n}${a.b?' · выведены тобой':''}<br><small>ср. вес ${(a.w/a.n).toFixed(2)} кг (${Math.round(a.w/a.m*100)}% от взрослого) · ~${fm(a.v/a.n)}🪙/шт · готово ${a.r}${a.left<240?' · старость через ~'+Math.max(0,Math.round(a.left/60*10)/10)+' ч':''}</small></span>${a.r?`<button data-p="sr,${a.i},${a.b}">Продать ${a.r} шт · ${fm(a.rv)}🪙</button>`:`<small>растёт…<br>всего ${fm(a.v)}🪙</small>`}</div>`).join('')||'<p class="mu">Пруд пуст.</p>');
  const bk={};S.inv.forEach(v=>{if(pondOK(v.i))bk[v.i]=(bk[v.i]||0)+1});
- h+='<h3>Посадить из рюкзака</h3>'+(Object.keys(bk).map(i=>`<div class="rw">${im(i,32)}<span>${F[i].n} ×${bk[i]}</span><button data-p="st,${i}">В ПРУД</button></div>`).join('')||'<p class="mu">В рюкзаке нет подходящей рыбы (мусор, клады, мифические и огромные рыбы в пруд не посадить).</p>')}
+ h+='<h3>Посадить из рюкзака</h3>'+(Object.keys(bk).map(i=>`<div class="rw">${im(i,32)}<span>${F[i].n} ×${bk[i]}</span><button data-p="st,${i}">В ПРУД</button></div>`).join('')||'<p class="mu">В рюкзаке нет подходящей рыбы (мусор, клады и мифические рыбы в пруд не посадить).</p>')}
 else if(pk=='care')h+=`<div id="pst">${pondStat()}</div><h3>Корм</h3><div class="ch">${FEED.map((f,i)=>`<button class="g ${p.fs==i?'on':''}" data-p="fs,${i}">${f.n} ×${Math.floor(p.feed[i])}</button>`).join('')}</div><p class="mu">Чем лучше корм, тем быстрее растут рыбы: ×${FEED.map(f=>f.m).join(' / ×')}.</p><div class="ch">${FEED.map((f,i)=>`<button data-p="bf,${i},10">+10 · ${f.p*10}🪙</button>`).join('')}</div><button class="wide g" data-p="cl">🧽 ПОЧИСТИТЬ ПРУД · ${cleanCost()}🪙</button>`;
 else if(pk=='up'){const nl=p.lv.size+1<POND_SZ.length,nf=p.lv.filter+1<FILT.length;
  h+=`<div class="rw"><span>📐 Размер: <b>${POND_SZ[p.lv.size]}</b> рыб</span>${nl?`<button data-p="up">${POND_SZ[p.lv.size+1]} рыб · ${fm(POND_SZP[p.lv.size+1])}🪙</button>`:'<b>MAX</b>'}</div><div class="rw"><span>🔧 Фильтр: <b>${FILT[p.lv.filter].n}</b><br><small>чем лучше фильтр, тем реже нужно чистить пруд</small></span>${nf?`<button data-p="ft">${FILT[p.lv.filter+1].n} · ${fm(FILT[p.lv.filter+1].p)}🪙</button>`:'<b>MAX</b>'}</div>`}

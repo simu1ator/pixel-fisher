@@ -1,10 +1,27 @@
 // Интерфейс: двухуровневая навигация, рюкзак, магазин, мастерская, рисунки лодок.
 (()=>{if(!document.head)return;const s=document.createElement('style');s.textContent=`#sub{display:flex;gap:5px;overflow-x:auto;padding:2px 2px 8px}#sub button{flex:0 0 auto;font-size:8px;padding:7px 10px;box-shadow:none;border-width:2px}
 .pill{display:flex;gap:4px;overflow-x:auto;margin-bottom:8px}.pill button{flex:1 0 auto;font-size:8px;padding:7px 8px;border-width:2px;box-shadow:none}
-.card{border:3px solid var(--ln);background:var(--pn);padding:8px;margin-bottom:8px}`;document.head.appendChild(s)})();
-const TABS=[['inv','🎒 Рюкзак'],['shop','🏪 Магазин'],['gear','🔧 Мастерская'],['map','🗺 Карта'],['col','📖 Рыбы'],['look','👕 Образ'],['house','🏠 Дом'],['pond','🐟 Пруд'],['chat','💬 Чат'],['mkt','🤝 Рынок'],['top','🏆 Топ'],['fr','👥 Друзья']];
-function navDraw(){const n=$('#nav');n.className='tbs';n.style.marginTop='12px';n.innerHTML=TABS.map(t=>`<button class="g ${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');$('#sub').innerHTML=''}
-function navInit(){$('#nav').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;tab=b.dataset.t;render()}}
+.card{border:3px solid var(--ln);background:var(--pn);padding:8px;margin-bottom:8px}
+#hb{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:6;width:44px;height:44px;font-size:20px;padding:0}
+#dr{position:fixed;top:0;left:0;bottom:0;width:80%;max-width:330px;background:var(--pn);border-right:3px solid var(--ln);z-index:30;transform:translateX(-106%);transition:transform .2s;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 12px) 10px 24px}
+#dr.open{transform:none}#dbk{position:fixed;inset:0;background:#000a;z-index:29;display:none}#dbk.open{display:block}
+#dr .dh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font:10px 'Press Start 2P',monospace}
+#dr .di{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font-size:10px;padding:13px 8px;margin:3px 0;box-shadow:none;background:transparent;color:var(--ink);border:2px solid transparent}
+#dr .di.on{border-color:var(--ln);background:#e8602c33}#dr .ic2{font-size:20px;width:26px;text-align:center}
+#pbar{position:fixed;top:0;left:0;right:0;z-index:8;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px;background:var(--bg);border-bottom:3px solid var(--ln)}
+#pbar b{flex:1;font:10px 'Press Start 2P',monospace}#pbar button{width:44px;height:40px;padding:0;font-size:16px}
+#pn.page{position:fixed;inset:0;z-index:7;overflow:auto;margin:0;border:0;box-shadow:none;background:var(--bg);padding:calc(env(safe-area-inset-top,0px) + 64px) 12px calc(env(safe-area-inset-bottom,0px) + 24px)}
+#pn.page>*{max-width:560px;margin-left:auto;margin-right:auto}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%) translateY(30px);max-width:88%;background:var(--ln);color:#fff;padding:10px 14px;font-size:12px;font-weight:bold;border:2px solid #fff;z-index:40;opacity:0;pointer-events:none;transition:all .2s}
+#toast.show{opacity:1;transform:translateX(-50%)}`;document.head.appendChild(s)})();
+const MENU=[['inv','🎣','Рыбалка и рюкзак'],['shop','🏪','Магазин'],['gear','🔧','Мастерская'],['map','🗺','Карта'],['col','📖','Коллекция рыб'],['look','👕','Образ'],['house','🏠','Дом'],['pond','🐟','Пруд'],['chat','💬','Чат'],['mkt','🤝','Рынок'],['top','🏆','Топ игроков'],['fr','👥','Друзья']];
+let HB,DR,BK,PB,TE,TO;
+function toast(t){if(!document.body)return;if(!TE){TE=document.createElement('div');TE.id='toast';document.body.appendChild(TE)}TE.textContent=t;TE.classList.add('show');clearTimeout(TO);TO=setTimeout(()=>TE.classList.remove('show'),2800)}
+function drawerOpen(o){if(!DR)return;DR.innerHTML='<div class="dh"><b>🎣 ПИКСЕЛЬНЫЙ РЫБАК</b><button id="dx" class="g">✕</button></div>'+MENU.map(m=>`<button class="di ${tab==m[0]?'on':''}" data-n="${m[0]}"><span class="ic2">${m[1]}</span>${m[2]}</button>`).join('')+'<p class="mu" style="margin-top:14px">🪙 '+fm(S.c)+' · '+rankInfo().n+'</p>';DR.classList.toggle('open',o);BK.classList.toggle('open',o)}
+function go(t){tab=t;drawerOpen(false);render();const pn=$('#pn');if(pn)pn.scrollTop=0;try{window.scrollTo(0,0)}catch(e){}}
+function navDraw(){const pg=tab!='inv',pn=$('#pn');pn.classList.toggle('page',pg);if(PB){PB.hidden=!pg;const m=MENU.find(x=>x[0]==tab);const t=$('#pbt');if(t)t.textContent=m?m[1]+' '+m[2]:''}if(HB)HB.hidden=pg;if(document.body)document.body.style.overflow=pg?'hidden':'';$('#nav').innerHTML='';$('#sub').innerHTML=''}
+function navInit(){if(!document.body||HB)return;HB=document.createElement('button');HB.id='hb';HB.textContent='☰';BK=document.createElement('div');BK.id='dbk';DR=document.createElement('div');DR.id='dr';PB=document.createElement('div');PB.id='pbar';PB.innerHTML='<button id="pbm">☰</button><b id="pbt"></b><button id="pbx" class="g">✕</button>';PB.hidden=true;[HB,BK,DR,PB].forEach(e=>document.body.appendChild(e));
+HB.onclick=()=>drawerOpen(true);BK.onclick=()=>drawerOpen(false);DR.onclick=e=>{if(e.target.closest('#dx'))return drawerOpen(false);const b=e.target.closest('[data-n]');if(b)go(b.dataset.n)};PB.onclick=e=>{if(e.target.closest('#pbm'))drawerOpen(true);else if(e.target.closest('#pbx'))go('inv')}}
 function popup(ic,t,tx){$('#mc').innerHTML=`<div class="ic">${ic}</div><h2>${t}</h2><p>${tx}</p><button id="ok">ОК</button>`;$('#md').hidden=false;$('#ok').onclick=()=>{$('#md').hidden=true}}
 const row=(i,t,s,b)=>`<div class="rw">${i||''}<span><b>${t}</b>${s?'<br><small>'+s+'</small>':''}</span>${b||''}</div>`,bt=(a,t,c)=>`<button class="${c||''}" data-a="${a}">${t}</button>`;
 function invTab(){const gr={};S.inv.forEach(x=>{const a=gr[x.i]=gr[x.i]||{n:0,s:0,w:0};a.n++;a.s+=x.p;a.w+=x.w});const ks=Object.keys(gr),tot=S.inv.reduce((a,x)=>a+x.p,0);
@@ -34,7 +51,7 @@ const grab=f=>{f();return $('#pn').innerHTML};
 const ord=(A,k)=>A.map((x,i)=>[x,i]).sort((a,b)=>a[0][k]-b[0][k]);
 const UI={inv:()=>{$('#pn').innerHTML=grab(baitTab)+grab(invTab)},shop:shopTab,gear:gearTab,look:()=>lookTab(),top:()=>topTab()};
 function bindX(){$('#pn').querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>xAct(b.dataset.x))}
-function xAct(a){const k=a.split(',')[0];if(k=='lk'||k=='lc')lookAct(a);else if(k=='db'||k=='dt')pAct(a);else if(k=='rl')reelAct(a);else if(k=='dn')donateBuy(a.split(',')[1]);else if(k=='rd')redeemCode()}
+function xAct(a){const k=a.split(',')[0];if(k=='lk'||k=='lc')lookAct(a);else if(k=='db'||k=='dt')pAct(a);else if(k=='rl')reelAct(a);else if(k=='dn')donateBuy(a.split(',')[1]);else if(k=='rd')redeemCode();else if(k=='tp')pingNow().then(topRefresh)}
 // ---- лодки ----
 function boatArt(Q,k,x,y){
 if(k==0){Q('#c8650a',x+2,y+4,56,2);Q('#f59a23',x+2,y,56,4);Q('#ffc266',x+4,y,52,1);Q('#f59a23',x,y+1,2,3);Q('#f59a23',x+58,y+1,2,3);Q('#9a4a05',x+6,y+6,48,1);Q('#8a5a2b',x+20,y-1,3,2);Q('#8a5a2b',x+38,y-1,3,2);Q('#333',x-2,y+1,3,6);Q('#666',x-3,y+6,3,2);Q('#ddd',x+58,y+4,3,1)}
