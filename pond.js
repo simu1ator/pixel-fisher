@@ -15,8 +15,8 @@ const ready=f=>!f.d&&(f.w>=f.mx*.95||f.age>=f.life*.85);
 const cleanCost=()=>Math.ceil(15+S.pd.fish.length*4.5);
 function modInit(){houseInit();S.pd=S.pd||{t:Date.now(),q:100,lv:{size:0,filter:0},feed:[10,0,0],fs:0,fish:[]};S.pd.dec=S.pd.dec||{own:[],on:[]};
 worldInit();contentInit();content2Init();lookInit();inflate();navInit();netInit();houseWear();pondTick()}
-if(!f.g2&&!f.d&&!f.b&&f.w>=f.mx*.97){f.mx=+Math.max(f.w*1.12,F[f.i].w1*1.15).toFixed(2);f.g2=1}});
 S.pd.fish.forEach(f=>{if(f.mx==null){f.mx=+Math.max(f.w,F[f.i].w1*1.1).toFixed(2);f.age=f.age||0;f.life=lifeOf(f.i)}
+if(!f.g2&&!f.d&&!f.b&&f.w>=f.mx*.97){f.mx=+Math.max(f.w*1.12,F[f.i].w1*1.15).toFixed(2);f.g2=1}});
 function kill(f){f.dv=pval(f);f.d=1}
 function pondTick(){const p=S.pd,now=Date.now();let dm=Math.min((now-p.t)/60000,720);if(dm<1/6)return;p.t=now;
 const n=Math.ceil(dm),st=dm/n,born=[],aged=[],dirty=[],cl=1-Math.min(.3,p.dec.on.reduce((s,i)=>s+(DECOR[i].cl||0),0));
